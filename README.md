@@ -4,8 +4,8 @@ Expert native Zsh engineering for coding agents.
 
 Zsh Expert is an [Agent Skill](https://agentskills.io) for designing, reviewing,
 debugging, and optimizing Zsh code. It gives an agent a Zsh-native mental model
-for scripts, startup files, Oh My Zsh customizations, completions, ZLE widgets,
-prompts, plugins, and asynchronous interactive code.
+for scripts, startup files, completions, ZLE widgets, prompts, plugins, framework
+integrations, and asynchronous interactive code.
 
 This is an agent skill, not a shell plugin: do not source it from `.zshrc`.
 
@@ -30,7 +30,7 @@ The skill is designed to produce code that is:
 | --- | --- |
 | Language and data | Execution order, parameters, arrays, expansion flags, patterns, glob qualifiers |
 | Reusable programs | Functions, dynamic scope, option hygiene, statuses, traps, redirections, input parsing, native modules, jobs |
-| Interactive systems | Startup files, Oh My Zsh, compsys, completion authoring, ZLE, prompts, VCS state, hooks, plugin lifecycle |
+| Interactive systems | Startup files, compsys, completion authoring, ZLE, prompts, VCS state, hooks, plugin and framework lifecycles |
 | Quality and boundaries | Performance, security, testing, debugging, profiling, Bash migration, version gates |
 
 The core instructions route the agent to the smallest relevant subset of 24
@@ -89,8 +89,8 @@ $zsh-expert Port this Bash script to idiomatic native Zsh 5.9.
 ```
 
 Codex can also select the skill automatically when a request clearly concerns
-Zsh or Oh My Zsh. In Codex CLI or the IDE extension, use `/skills` to confirm
-that `zsh-expert` is available.
+Zsh. In Codex CLI or the IDE extension, use `/skills` to confirm that
+`zsh-expert` is available.
 
 ## How it works
 
@@ -112,9 +112,31 @@ zsh-expert/
 ```
 
 The references separate core Zsh semantics, Zsh's contributed systems such as
-compsys and ZLE, and framework-specific behavior such as the Oh My Zsh plugin
-lifecycle. [`references/24-source-map.md`](references/24-source-map.md) maps
-the research to authoritative upstream material.
+compsys and ZLE, and optional framework-specific behavior.
+[`references/24-source-map.md`](references/24-source-map.md) maps the research
+to authoritative upstream material.
+
+## Research foundation
+
+Oh My Zsh was a major source of inspiration and a valuable implementation
+corpus for this skill. Its mature handling of startup order, plugin lifecycles,
+completion caches, asynchronous prompts, terminal state, updates, and security
+helped identify engineering patterns worth teaching.
+
+Those lessons were generalized into native Zsh guidance and checked against
+upstream Zsh semantics. Oh My Zsh is neither a dependency nor the skill's
+primary target; framework-specific behavior is called out explicitly where it
+matters.
+
+## Versioning
+
+The current release is **v1.0.0**, the first stable version after successful
+use in two real-world projects.
+
+This project follows [Semantic Versioning](https://semver.org/). The release
+number is stored as a string in `SKILL.md` under `metadata.version` and mirrored
+by a matching Git tag. Agent Skills clients may use custom metadata differently,
+so the Git tag remains the portable release marker.
 
 ## Verify Zsh files
 

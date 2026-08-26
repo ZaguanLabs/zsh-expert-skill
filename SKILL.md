@@ -1,6 +1,8 @@
 ---
 name: zsh-expert
-description: Design, implement, review, debug, and optimize native Zsh scripts, startup files, Oh My Zsh customizations, plugins, completions, ZLE widgets, and prompts. Use when the target is Zsh or Oh My Zsh and expert shell semantics matter; do not use for scripts that must remain portable POSIX sh or Bash.
+description: Design, implement, review, debug, and optimize native Zsh scripts, startup files, plugins, completions, ZLE widgets, prompts, and framework integrations. Use when the target is Zsh and expert shell semantics matter; do not use for scripts that must remain portable POSIX sh or Bash.
+metadata:
+  version: "1.0.0"
 ---
 
 # Zsh Expert

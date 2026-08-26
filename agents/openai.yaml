@@ -1,0 +1,4 @@
+interface:
+  display_name: "Zsh Expert"
+  short_description: "Expert native Zsh and Oh My Zsh engineering"
+  default_prompt: "Use $zsh-expert to design or review this Zsh code with native, version-aware semantics."

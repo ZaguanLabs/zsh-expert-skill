@@ -14,7 +14,7 @@ Inside:
 
 ```zsh
 _command() {
-  local context state state_descr line
+  local curcontext="$curcontext" context state state_descr line
   typeset -A opt_args
 
   _arguments -C \
@@ -41,6 +41,8 @@ _command() {
 ```
 
 Use descriptions and tags; do not merely call `compadd` on raw words.
+
+An autoload file can contain the body directly or solely the `_command() { ... }` definition shown above. If it contains setup alongside a definition, also arrange the first invocation explicitly; see the autoload reference. Compsys establishes its own option environment: do not begin completion functions with a generic `emulate -L zsh` that resets it.
 
 ## `_arguments` design
 
@@ -92,5 +94,25 @@ Cover:
 - user matcher-list, grouping, descriptions, and menu selection.
 
 Use the upstream `comptest` style harness or a PTY; asserting helper text alone does not prove the right matches were offered.
+
+## Choose the grammar helper
+
+| Input grammar | Native building block | Design implication |
+| --- | --- | --- |
+| Options and subcommands | `_arguments`, `_dispatch`, `_normal` | Localize `curcontext` for `-C`; model the remaining command line before delegating. |
+| Comma-separated keys with arguments | `_values -s ,`, `val_args` | Encode exclusion/repetition and value arguments; localize state just as with `_arguments`. |
+| A list of independently completed items | `_sequence` | Reuse a completer with a separator and optional maximum length. |
+| Hierarchical identifiers such as `region/service/task` | `_multi_parts` | Complete components from a value list without pretending they are local filenames. |
+| Alternating kinds of components | `_sep_parts` | Represent each component's candidates and separators explicitly. |
+| Related fields such as user/host/port | `_combination` | Preserve permitted tuples instead of independently suggesting incompatible fields. |
+| Repeated or alternative word-level grammar | `_regex_arguments`, `_regex_words` | Build a parser with lookahead, guards, and completion actions; the patterns are Zsh patterns over NUL-separated words, not PCRE. |
+
+Use the lowest-level interface only when helpers cannot express the grammar. `compset -P`/`-S` moves accepted text into ignored prefixes/suffixes; `compset -n` narrows `words` and adjusts `CURRENT`. Honor the suffix after a mid-word cursor. These parameters are restored at function boundaries by default through `compstate[restore]`; change that only as an intentional delegation contract.
+
+## Separate candidate identity, display, and policy
+
+Keep raw candidates in an array and descriptions in another. `compadd -d descriptions -a candidates` separates inserted values from display text, useful for colons in values that would need escaping in `_describe` records. Let `compadd` quote metacharacters; `-Q` disables that protection, while `-U` bypasses normal matching. Use each only for a documented reason. `-V` preserves a ranked group's order.
+
+For custom multi-source completion, register `_tags`, iterate requested tags/labels, and forward the `expl` options returned by `_description`/`_next_label`. A single `_wanted` call is sufficient for one source. This lets user styles select and regroup candidates; directly collecting all values with untagged `compadd` defeats that interface. Cache raw domain data, then apply current matching, descriptions, and user policy on each completion attempt.
 
 Search terms: `_arguments`, `opt_args`, completion state, `_describe`, `_alternative`, `_call_program`, `#compdef`, `_as_if`.

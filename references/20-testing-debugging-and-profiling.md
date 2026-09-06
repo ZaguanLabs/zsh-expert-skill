@@ -56,6 +56,12 @@ Use `zpty` or a test harness such as upstream Zsh's `comptest`. Drive exact key 
 
 For async tests, control the worker with barriers rather than sleeps. Assert old generations are discarded, FDs are unregistered, children are terminated, and a reused descriptor does not invoke the old callback.
 
+Send a partial frame and hold its writer open: the editor must still accept input. This distinguishes real nonblocking behavior from a callback that blocks in `read` after the initial readiness notification.
+
+Test reusable functions under adverse caller options (`SH_WORD_SPLIT`, `KSH_ARRAYS`, `GLOB_SUBST`) and compare the caller's state before/after. Alias leakage is a separate parse-time test: define aliases before loading the function. `WARN_CREATE_GLOBAL` and `WARN_NESTED_VAR` can expose accidental state coupling during diagnosis; deliberate `reply` protocols will need interpretation rather than blanket suppression.
+
+For provenance, `functions_source[name]` locates loaded definitions and `funcfiletrace` identifies call sites. `funcsourcetrace` gives definition sites, while `funcstack` describes the call chain. Read these structured tables instead of parsing trace output to infer source identity.
+
 ## Test traps and cleanup
 
 Exercise success, ordinary failure, `return`, Ctrl-C/TERM, timeout, child crash, and cleanup failure. Verify final status and filesystem/descriptor/process state. A cleanup test that only checks the happy path is insufficient.

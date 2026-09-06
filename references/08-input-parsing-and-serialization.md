@@ -18,7 +18,7 @@ while IFS= read -r line || [[ -n $line ]]; do
 done < "$file"
 ```
 
-Use `read -u fd`, `-t timeout`, `-k count` for terminal keys, and `-d delim` for custom delimiters. Locale affects characters versus bytes.
+Use `read -u fd`, `-k count` for terminal keys, and `-d delim` for custom delimiters. `read -t` tests initial availability; it does not put a deadline on receiving an entire line. A partial record can still block. Use timed/nonblocking `sysread` plus a framing buffer when responsiveness matters. Locale affects characters versus bytes.
 
 ## Split only once
 
@@ -27,7 +27,7 @@ lines=("${(@f)text}")
 parts=("${(@s.:.)record}")
 ```
 
-`(@s:sep:)` preserves empty fields. Avoid setting global `IFS` or enabling `SH_WORD_SPLIT`. For NUL-delimited external data, read with a NUL delimiter in a loop or use `zsh/system`; do not store a whole NUL stream in one scalar.
+`(@s:sep:)` preserves empty fields. Avoid setting global `IFS` or enabling `SH_WORD_SPLIT`. Bounded NUL data can be held in a Zsh scalar and split with `(@0)`; streaming with `IFS= read -r -d '' record` avoids retaining the entire input. A terminating delimiter creates a final empty field when splitting a scalar; decide whether it is framing or a real empty record. Guard zero-element arrays when emitting `print -rN -- "${records[@]}"`: a no-argument print emits a terminator too.
 
 ## Parse shell words without executing them
 
@@ -62,10 +62,15 @@ Key design choices:
 - `-E` allows options after operands;
 - `-F` fails atomically on an unknown option-like argument;
 - `-K` preserves defaults already in destination arrays;
+- `-M` maps option aliases to one destination, useful for last-occurrence-wins policies;
 - `:=array` retains option plus argument; `=array` stores occurrences;
 - stable 5.9 lacks the development-line `-G` GNU parser (`--opt=value`), `-n`, and `-v` additions.
 
 Inspect actual array layout in tests. Do not assume GNU long-option abbreviation.
+
+Distinguish the parser's `--` from the user's end-of-options marker; test whether the latter remains in `$@` after `-D`. Optional arguments are attached rather than consumed like required separate arguments. Parse a CLI once into typed state and use that same option contract when authoring completion.
+
+`(z)` is a lexer, not an AST or an incremental editor parser. It retains shell operators as words and does not evaluate substitutions. For incomplete quotes and cursor-sensitive transformations, use the ZLE utilities in [14-zle-widgets-and-plugin-interop.md](14-zle-widgets-and-plugin-interop.md). `(X)` requests reporting for supported expansion parsing errors; test malformed input deliberately rather than treating `(Q)` as validation.
 
 For broadly portable CLIs, `getopts` may be the better contract. Zsh's `zparseopts` shines for native functions and completion helpers.
 

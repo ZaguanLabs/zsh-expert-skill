@@ -22,7 +22,7 @@ Quote inserted shell words with `(q)` when the widget inserts one argument. If i
 
 Builtins can be invoked as `.widget`. User and completion widgets require different registration forms. The `$widgets` associative table classifies entries as `builtin`, `user:function`, or `completion:widget:function`.
 
-If wrapping is unavoidable, snapshot according to that type and pass `-- "$@"`. Do not assume `$WIDGET` is always trustworthy: other plugins may invoke a widget without `zle ... -w`.
+If wrapping is unavoidable, use `zle -A original owned-saved-name` to retain the widget binding, including completion widgets, then delegate with `zle owned-saved-name -- "$@"`. The `$widgets` type is useful for diagnosis or explicit reconstruction. Restore only if the public binding is still yours and delete only your saved name. Do not assume `$WIDGET` identifies an indirectly invoked widget: `zle ... -w` controls that. Preserve or deliberately override numeric arguments and `LASTWIDGET` behavior.
 
 Prefer hook facilities over wrapping:
 
@@ -77,4 +77,22 @@ Assert:
 - coexistence with autosuggestions and syntax highlighting in both source orders;
 - teardown and descriptor reuse.
 
-Search terms: user-defined widget, `$widgets`, `add-zle-hook-widget`, `region_highlight`, `zle -F`, keymap alias, plugin load order.
+## Edit shell arguments as structured text
+
+Use `split-shell-arguments` when a widget must preserve the line's spelling and spacing. It returns alternating whitespace and argument segments in caller-local `reply`, with cursor location in `REPLY` and `REPLY2`; joining with an empty separator reconstructs the original buffer. It preserves quote characters. This supports source-preserving edits that a `(z)`/`(Q)` round trip would reformat.
+
+Use `modify-current-argument` for transforming the argument at the cursor. Its function form receives the current argument and returns replacement text in `REPLY`; its expression form evaluates code containing `$ARG`. Prefer a named helper when data or multiple stages are involved. Inspect its behavior for incomplete quotes and quote the final value for the intended shell-word context.
+
+For word/subword motions, reuse `select-word-style`, `match-words-by-style`, and the `*-match` widgets. They support whitespace, shell-word, character-class, and subword policies through styles. An associative `matched_words` gives named regions such as `word-before-cursor` and `word-after-cursor`; preserve empty regions. Vi shell-word text objects (`select-in-shell-word`, `select-a-shell-word`) already understand quoted arguments. Avoid writing a whitespace regex to rediscover these structures.
+
+## Treat a modal edit as a transaction
+
+Use `vared` to edit a parameter and `recursive-edit` for a temporary mode inside a widget. Clone a keymap with `bindkey -N temporary original` when editing it independently; `bindkey -A` makes an alias sharing the same map. Limit all temporary bindings, prompts, history, and undo state to their owner and restore them in `always`.
+
+Snapshot `UNDO_CHANGE_NO` and use `zle undo saved_change` for a deliberate rollback; local `UNDO_LIMIT_NO` can keep recursive editing from undoing changes preceding the mode. Check `recursive-edit`'s status before committing and restore cursor/mark/selection as needed. `split-undo` defines a user-visible undo boundary.
+
+Widgets that implement kills, yanks, or repeatable vi changes should set the corresponding `zle -f kill`, `yank`, or `vichange` flag; yanks also need correct `YANK_START`/`YANK_END`. Delegate to builtin widgets when that preserves kill-ring and repeat semantics. Handle auto-removable suffixes via `auto-suffix-remove`/`auto-suffix-retain` when inserting punctuation. Use `zle .bracketed-paste parameter` to capture a paste into a parameter for deliberate processing rather than replaying every pasted byte as keystrokes.
+
+PTY assertions should cover undo and cancellation, kill/yank chaining, vi repetition, incomplete syntax, mid-word cursors, Unicode, paste, and coexistence with completion/highlighting.
+
+Search terms: user-defined widget, `$widgets`, `add-zle-hook-widget`, `region_highlight`, `zle -F`, keymap alias, `split-shell-arguments`, `modify-current-argument`, `recursive-edit`, undo, `match-words-by-style`.

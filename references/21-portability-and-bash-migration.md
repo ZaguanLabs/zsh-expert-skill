@@ -37,7 +37,11 @@ Use `${=scalar}` only for an API that explicitly accepts a shell-like word list.
 
 ### Arrays
 
-Zsh indexed arrays are one-based and `$array` means element 1. Associative syntax and key iteration differ. Avoid `KSH_ARRAYS` unless emulating ksh is the whole execution contract.
+Zsh indexed arrays are one-based and unsubscripted `$array` expands all elements; `"$array"` joins them. Use `"${array[@]}"` for boundaries and empty elements. Associative syntax and key iteration differ. Avoid `KSH_ARRAYS` unless emulating ksh is the whole execution contract.
+
+### Pipeline state and bytes
+
+Native Zsh normally runs a foreground pipeline's final shell component in the current shell; a final `read` or loop can retain assignments. Do not carry Bash's usual subshell restriction into the design. Zsh also supports NUL within parameters, although external argv/environment cannot; use pipes/files for that boundary and account for command substitution's trailing-newline removal.
 
 ### No-match globs
 

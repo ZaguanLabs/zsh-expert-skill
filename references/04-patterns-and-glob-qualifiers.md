@@ -68,6 +68,20 @@ recent_without_peer=( *.c(N.e:'[[ ! -e $REPLY:r.o ]]':) )
 
 For reusable logic, prefer the `+function` form over a quoted inline program. Keep the predicate side-effect free; it runs once per candidate and can become a performance or injection hazard.
 
+The `+` form reads an alphanumeric/underscore function name, so use `_acme_needs_build`, not a `::`-separated name. A predicate's `REPLY` is an output parameter: do not localize it if you intend to transform the result. A `reply` array can expand one candidate into several output words; unset it on paths that should return only `REPLY`.
+
+```zsh
+_acme_needs_build() {
+  # Called by filename generation; REPLY is the source pathname.
+  [[ ! -e ${REPLY:r}.o || $REPLY -nt ${REPLY:r}.o ]]
+}
+sources=( "$root"/**/*.c(N.+_acme_needs_build) )
+```
+
+This is incremental selection by peer metadata, not a general dependency tracker. Glob sort code `oe`/`o+` computes a sort key through `REPLY` once per candidate; use that when the ordering key needs native metadata or a derived name. Do not spawn an external command per candidate merely to save a visible loop.
+
+Qualifiers in one list are ANDed; comma-separated groups are alternatives. `^` and `-` toggle the interpretation of subsequent qualifiers, not just the next character. `(^F)` includes non-directories; `(/^F)` specifically selects empty directories. Permission-bit qualifiers test mode bits, not effective access through ACLs.
+
 ## No-match behavior is a design choice
 
 Default `NOMATCH` catches mistakes. Do not globally set `NO_NOMATCH` or `NULL_GLOB` in a library. Use `(N)` on optional globs and assert non-empty before destructive commands:
@@ -94,6 +108,10 @@ Ordering keys include name, size, link count, timestamps, and execution order ex
 
 ## Recursive scale
 
-Globbing materializes matches as arguments. For huge trees, use `zargs` to batch or an external traversal API that streams. `zsh/files` builtins avoid exec overhead but do not remove argument-count and destructive-scope concerns.
+Globbing materializes matches as arguments. For huge trees, use `zargs` to batch or an external traversal API that streams. `zsh/files` builtins avoid exec overhead and external argument-size limits, but still require memory for every argument and careful control of destructive scope.
+
+`Y10` stops at ten traversal matches; `om[1,10]` sorts all matches before choosing the newest ten. Combining `Y10` with sorting only sorts the early subset, and cannot produce a global top ten. `(N[1])`/`Y1` are useful for existence tests when ordering is irrelevant. `**/` does not follow directory symlinks; `***/` does. Excluding matching result paths with `~` does not in general prune traversal into those directories.
+
+For collision-checked renaming, prefer `autoload -Uz zmv` and a quoted mapping such as `zmv -n '(*).draft' '$1.txt'`. `zmv` checks the mapping for conflicts before executing; the operation is still not atomic if later moves fail. In a programmatically generated destination, quote literal fragments for the destination's evaluation context. For batches, `zargs -r -- "${files[@]}" -- command -- ...` is an argument-list API, not a line parser; it avoids `exec` size limits, not the memory needed to collect files.
 
 Search terms: glob qualifiers, `BARE_GLOB_QUAL`, `EXTENDED_GLOB`, approximate matching, qualifier `e`, `Y` short circuit, `zargs`, `zmv`.

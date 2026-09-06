@@ -2,12 +2,20 @@
 name: zsh-expert
 description: Design, implement, review, debug, and optimize native Zsh scripts, startup files, plugins, completions, ZLE widgets, prompts, and framework integrations. Use when the target is Zsh and expert shell semantics matter; do not use for scripts that must remain portable POSIX sh or Bash.
 metadata:
-  version: "1.0.0"
+  version: "1.0.1"
 ---
 
 # Zsh Expert
 
 Produce native Zsh that is precise, composable, and maintainable. Exploit Zsh-specific capabilities when they simplify the result, but do not turn dense syntax into a goal of its own.
+
+## Design in native Zsh
+
+Before implementing a substantial solution, consider the shell's own data and execution model. Look for a useful composition of arrays, expansion, glob queries, dynamic scope, autoloaded functions, modules, and the completion/editor APIs. Use [23-exceptional-recipes.md](references/23-exceptional-recipes.md) when choosing an architecture; follow its topic links for implementation details.
+
+Choose by the operation: set reconciliation wants array operators; filesystem selection wants glob qualifiers; shared helper state wants a documented output protocol; an interactive grammar wants compsys or ZLE's shell-word utilities; byte streams want descriptors and framing. Consider [specialized native systems](references/26-specialized-native-systems.md) when a task needs capabilities beyond ordinary shell scripting.
+
+Explain the benefit and the essential invariant of an advanced technique. Prefer it when it materially improves correctness, expressiveness, composability, or measured performance. Do not force every feature into every program, or reject a useful native design merely because it is unfamiliar.
 
 ## Establish the contract
 
@@ -25,7 +33,7 @@ If the repository states a minimum version, honor it. Otherwise target the insta
 ## Work from these invariants
 
 - Zsh does not perform implicit IFS splitting or filename generation on ordinary unquoted parameter expansion in native mode. Model lists as arrays and expand them with `"${array[@]}"` when boundaries matter.
-- Function scope is dynamic. Start reusable functions with `emulate -L zsh`; add only the options they need. Localize traps and patterns too when the function changes them.
+- Function scope is dynamic. Normally start reusable functions with `emulate -L zsh`; add only the options they need. Completion functions inherit compsys' option environment: preserve it rather than resetting it blindly. Emulation localizes options, patterns, and traps, not arbitrary shell state or parse-time aliases.
 - Do not combine a declaration with a fallible command substitution when its status matters. Declare first, then assign.
 - Treat `${(e)}`, `${~...}`, `eval`, `source`, prompt substitution, completion command output, and directory-local files as execution or pattern-compilation boundaries.
 - Prefer hook arrays through `add-zsh-hook` and `add-zle-hook-widget` over replacing a singleton hook or wrapping every widget.
@@ -44,6 +52,7 @@ Read only references relevant to the request. For cross-cutting work, load the p
 - Scalars, indexed/associative arrays, ties, special parameters: [references/02-parameters-and-arrays.md](references/02-parameters-and-arrays.md)
 - Nested expansion, flags, splitting, joining, modifiers: [references/03-expansion-algebra.md](references/03-expansion-algebra.md)
 - Extended patterns, recursive globbing, qualifiers, sorting: [references/04-patterns-and-glob-qualifiers.md](references/04-patterns-and-glob-qualifiers.md)
+- Numeric types, precedence, validation, custom math functions: [references/25-arithmetic-and-numeric-design.md](references/25-arithmetic-and-numeric-design.md)
 
 ### Reusable programs
 
@@ -52,6 +61,7 @@ Read only references relevant to the request. For cross-cutting work, load the p
 - Redirections, multios, descriptors, process substitution: [references/07-redirection-fds-and-process-substitution.md](references/07-redirection-fds-and-process-substitution.md)
 - Reading, tokenizing, option parsing, serialization: [references/08-input-parsing-and-serialization.md](references/08-input-parsing-and-serialization.md)
 - `zsh/*` modules and when they replace external tools: [references/09-native-modules.md](references/09-native-modules.md)
+- Sockets, persistent associations, curses, scheduling, contrib systems: [references/26-specialized-native-systems.md](references/26-specialized-native-systems.md)
 - Jobs, coprocesses, workers, and async callbacks: [references/10-async-concurrency-and-jobs.md](references/10-async-concurrency-and-jobs.md)
 
 ### Interactive systems
@@ -79,6 +89,8 @@ Read only references relevant to the request. For cross-cutting work, load the p
 Prefer a short, explicit design over a trick. Explain any expansion with more than one transformation stage. Keep destructive examples in dry-run form first.
 
 For changed files, run `zsh -n`. For non-interactive smoke tests, use `scripts/verify-zsh.zsh`; it parses by default and executes only with `--smoke`. Use a temporary `ZDOTDIR` for startup tests. For completion, ZLE, prompt, signals, or job-control behavior, use a PTY and assert observable buffer, match, or terminal state.
+
+When maintaining this skill's semantic guidance, run `zsh -df scripts/test-semantics.zsh`. Its assertions exercise the native behaviors used in the references; they do not replace tests of the user's program.
 
 When reviewing Oh My Zsh code, distinguish three layers in the answer:
 

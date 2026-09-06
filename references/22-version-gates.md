@@ -55,9 +55,11 @@ The upstream development line contains, among other changes:
 - `_shadow` and development `_call_program` quoting options;
 - refined `ERR_EXIT`/`ERR_RETURN` behavior;
 - monotonic internal timing changes;
-- `zsh/param/private`/private parameter work and namespace semantics.
+- namespace-related changes beyond the existing stable `zsh/param/private` module.
 
 These may be excellent designs, but copying examples from `master` into stable 5.9 code produces parse-time failures that a runtime branch cannot guard if the parser must read the new syntax.
+
+Do not classify every unfamiliar feature as development-only. The supplied 5.9.2 release manual includes private locals via `zsh/param/private`, array set/zip operators, `functions -M`, `zsocket`, GDBM ties, and curses. Detect optional module availability separately from language version. In particular, private locals have their own parse-order requirement; see [05-functions-scope-and-options.md](05-functions-scope-and-options.md).
 
 For syntax introduced in a newer version, isolate it in a separate autoload/source file selected only after the version check, or use a safely quoted `eval` of constant developer-authored code after capability detection. Prefer the separate file.
 

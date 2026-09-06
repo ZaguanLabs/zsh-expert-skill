@@ -21,6 +21,8 @@ Set `HISTSIZE` larger than `SAVEHIST` if duplicate expiry needs room to prefer o
 
 A `zshaddhistory` function/hook can reject or alter saving. Its status has special meaning; verify the exact contract before filtering. Avoid expensive network/repository work in this hook—it runs on every accepted command.
 
+Status 1 rejects saving (the line remains temporarily available for editing); status 2 retains the line in memory but excludes it from the history file. Use `fc -p -a` for a function-local history context that restores automatically, useful in a `vared`-based tool with its own history. History privacy options are retention policies, not secret erasure guarantees.
+
 Never log secret-bearing commands merely because the framework default would. Provide a leading-space privacy path and consider patterns for known credential tools, while recognizing pattern filters are not a complete secret detector.
 
 ## Register hooks compositionally
@@ -35,6 +37,8 @@ add-zsh-hook zshexit acme::shutdown
 
 Hook functions run in registration order. Preserve incoming `$?` immediately in `precmd`; `preexec` receives forms of the command line with different expansion/history properties, so choose the right argument for display versus analysis.
 
+A nonzero shell hook status can stop later hooks; ordinary successful observers should explicitly return 0 rather than accidentally returning the last false test. Preserve specialized status protocols such as `zshaddhistory`. `precmd` runs before a new prompt, not each redraw; `periodic` runs at prompt opportunities, not as a background timer.
+
 Remove hooks with `add-zsh-hook -d`; never overwrite the singleton `precmd()` function in a plugin.
 
 ## Directory stacks and named directories
@@ -42,6 +46,8 @@ Remove hooks with `add-zsh-hook -d`; never overwrite the singleton `precmd()` fu
 Zsh's `AUTO_PUSHD`, `PUSHD_IGNORE_DUPS`, `PUSHD_SILENT`, `PUSHD_TO_HOME`, and `DIRSTACKSIZE` define navigation semantics. Frameworks often configure these. A plugin should not change them globally unless navigation policy is its purpose.
 
 Named directories (`hash -d name=path`, directory parameters) participate in `~name` expansion and prompt shortening. The `cdr` contributed function and `zsh_directory_name` hook enable recent/contextual directory naming without replacing `cd`.
+
+Dynamic directory naming is a bidirectional API: an `n` request maps a logical name to a path; `d` supplies a shortened name and matched prefix length; `c` supplies completion. Implement only the supported modes and return failure for other names. `zsh_directory_name_generic` composes hierarchical mappings such as workspace/project/source through caller-visible associations. This unifies navigation, `%~` rendering, and completion without ad hoc aliases. `cdr` persists recent directories separately from the `pushd` stack.
 
 ## Per-directory activation is code execution
 

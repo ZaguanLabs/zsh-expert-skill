@@ -28,14 +28,14 @@ The skill is designed to produce code that is:
 
 | Area | Topics |
 | --- | --- |
-| Language and data | Execution order, parameters, arrays, expansion flags, patterns, glob qualifiers |
-| Reusable programs | Functions, dynamic scope, option hygiene, statuses, traps, redirections, input parsing, native modules, jobs |
+| Language and data | Execution order, arrays and set operations, expansion algebra, patterns, glob queries, arithmetic and custom math functions |
+| Reusable programs | Functions, dynamic/private scope, option hygiene, statuses, traps, descriptors, parsing, native modules, jobs, sockets and persistent associations |
 | Interactive systems | Startup files, compsys, completion authoring, ZLE, prompts, VCS state, hooks, plugin and framework lifecycles |
 | Quality and boundaries | Performance, security, testing, debugging, profiling, Bash migration, version gates |
 
-The core instructions route the agent to the smallest relevant subset of 24
-focused reference chapters. Security and testing guidance are added for work
-that crosses multiple areas.
+The core instructions route the agent to the smallest relevant subset of 26
+focused reference chapters, with a separate manual coverage record. Security
+and testing guidance are added for work that crosses multiple areas.
 
 ## Install
 
@@ -105,8 +105,9 @@ version-sensitive work.
 zsh-expert/
 ├── SKILL.md                 # Required metadata, workflow, and routing
 ├── agents/openai.yaml       # Display metadata and default prompt
-├── references/              # 24 focused Zsh engineering chapters
+├── references/              # 26 chapters plus manual coverage record
 ├── scripts/verify-zsh.zsh   # Parse and opt-in smoke-test helper
+├── scripts/test-semantics.zsh # Native behavior regression checks
 ├── LICENSE
 └── README.md
 ```
@@ -128,10 +129,18 @@ upstream Zsh semantics. Oh My Zsh is neither a dependency nor the skill's
 primary target; framework-specific behavior is called out explicitly where it
 matters.
 
+A subsequent review processed all 200 files in a supplied Zsh HTML corpus,
+including the release manual, older introduction, indexes, and redirects.
+The resulting guidance emphasizes compositions: array reconciliation, literal
+pattern construction, programmable glob queries, shell-aware editing, completion
+grammars, numeric APIs, and module-backed applications. The
+[coverage record](references/27-manual-coverage.md) explains what informed each
+area and which earlier semantic claims were corrected.
+
 ## Versioning
 
-The current release is **v1.0.0**, the first stable version after successful
-use in two real-world projects.
+The current version is **v1.0.1**, expanding native Zsh design guidance and
+correcting semantics through a comprehensive manual review and runtime checks.
 
 This project follows [Semantic Versioning](https://semver.org/). The release
 number is stored as a string in `SKILL.md` under `metadata.version` and mirrored
@@ -169,6 +178,7 @@ Before submitting changes:
 2. Run safe non-interactive examples with `scripts/verify-zsh.zsh --smoke`.
 3. Test interactive changes in a pseudo-terminal.
 4. Check that links from `SKILL.md` and this README still resolve.
+5. For changes to semantic guidance, run `zsh -df scripts/test-semantics.zsh`.
 
 ## License
 

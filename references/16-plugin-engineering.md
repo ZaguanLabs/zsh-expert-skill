@@ -44,6 +44,8 @@ zstyle -a ':acme:feature' commands commands
 
 Styles avoid the flat global parameter namespace and permit context-sensitive behavior. Use `-T` only when unset should mean true; use `-t` when unset should mean false. Document the distinction.
 
+Define the context grammar, not just the style names: for example `:acme:operation:project:backend`. Retrieve using a concrete context; definitions use patterns whose specificity controls precedence, rather than simply the last definition. `zstyle -e` computes `reply` at lookup time, so callers must treat style lookup as user-provided callback code and avoid repeatedly invoking expensive dynamic styles in hot loops. Validate the returned type/value at the configuration boundary.
+
 Current Oh My Zsh increasingly uses contexts such as `:omz:plugins:name`; follow the plugin's existing convention rather than inventing uppercase flags.
 
 ## Idempotency and ownership

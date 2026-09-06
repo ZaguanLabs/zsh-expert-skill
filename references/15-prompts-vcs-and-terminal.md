@@ -7,8 +7,8 @@ Use this section for prompt escapes, asynchronous VCS information, width account
 Prompt strings can undergo:
 
 1. parameter assignment/quoting when configured;
-2. prompt percent expansion (`PROMPT_PERCENT`);
-3. parameter/command/arithmetic expansion if `PROMPT_SUBST` is set;
+2. parameter/command/arithmetic expansion if `PROMPT_SUBST` is set;
+3. prompt escapes controlled by `PROMPT_PERCENT`/`PROMPT_BANG`;
 4. terminal rendering with zero-width escape regions.
 
 Treat repository branch names, virtualenv names, host-provided text, and command strings as untrusted display data. Escape percent signs when text will undergo prompt expansion and avoid feeding data into `PROMPT_SUBST` syntax.
@@ -68,4 +68,12 @@ Use `echoti`/terminfo for portable capabilities when available. If emitting ANSI
 
 ZLE needs correct printable width. `%{...%}` marks nonprinting sequences, not zero-width Unicode. Combining characters, emoji, East Asian width, and fonts can still produce display discrepancies. Keep truncation based on prompt escapes (`%<...<`) when possible and test in actual target terminals.
 
-Search terms: prompt expansion, `PROMPT_SUBST`, `vcs_info`, async prompt, zero-width escapes, terminal title, `precmd` status.
+## Use prompt grammar for presentation
+
+Native conditionals can handle success/failure, privileges, jobs, directory depth, and available text without command substitution. `%D{...}` supplies formatted time; `%<...<`/`%>...>` truncate a region, and `%<<` ends that truncation region. Keep reset sequences outside text that might disappear. This often removes both forks and per-prompt condition code.
+
+When the component owns the prompt and its `psvar` slots, put dynamic display text in `psvar` and refer to it with `%1v`, `%2v`, etc. A fixed prompt template such as `'%(?.%F{green}.%F{red})%1v%f %# '` separates status/style syntax from data. `psvar` text is inserted without recursively treating its percent signs as prompt escapes; it still needs terminal-control sanitization. Do not appropriate another theme's slots. A plugin that does not own the prompt should expose data/render APIs for the theme to integrate.
+
+The contributed `promptinit` theme system provides setup/preview/restore conventions; inspect those when integrating a theme there instead of adding an independent lifecycle. `zformat` offers named substitutions and conditional formatting for other renderers without needing `eval` or the full prompt engine.
+
+Search terms: prompt expansion, `PROMPT_SUBST`, `vcs_info`, async prompt, zero-width escapes, terminal title, `precmd` status, `psvar`, `zformat`, `promptinit`.

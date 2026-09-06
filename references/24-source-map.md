@@ -4,6 +4,10 @@ Use this section to verify a subtle claim, update the skill for a newer Zsh rele
 
 ## Stable primary baseline
 
+The 2026-09-06 revision also used the complete local HTML corpus supplied at `~/dev/ai/zaguan/PowerHouse/inspiration/zsh/zsh_html/`. Its release pages identify Zsh 5.9.2, generated 2026-07-12. [27-manual-coverage.md](27-manual-coverage.md) records file accounting, chapter-to-guidance decisions, historical material, and corrections. The source directory is research provenance, not a runtime dependency of this skill.
+
+Run `zsh -df scripts/test-semantics.zsh` from the skill root for executable semantic checks. These were exercised on Zsh 5.9.2; module tests explicitly report skips when unavailable. The local corpus and installed runtime establish this revision's baseline; do not infer support on every older version from that result.
+
 - [Zsh 5.9.2 release source](https://github.com/zsh-users/zsh/tree/zsh-5.9.2) — pinned stable semantics and tests. Researched commit `ddee3e7a751a4f03d5a1041fd44bb7af7bc0cebb` (2026-07-12).
 - [Zsh manual, 5.9.2 release](https://zsh.sourceforge.io/Doc/Release/) — authoritative grammar, expansion, builtins, ZLE, completion, modules, and contrib documentation.
 - [Zsh release notes](https://zsh.sourceforge.io/releases.html) — stable feature and compatibility changes.
@@ -46,6 +50,7 @@ OMZ is an implementation corpus, not the authority for core Zsh semantics. Some 
 - [Functions](https://zsh.sourceforge.io/Doc/Release/Functions.html)
 - [Redirection](https://zsh.sourceforge.io/Doc/Release/Redirection.html)
 - [Conditional expressions](https://zsh.sourceforge.io/Doc/Release/Conditional-Expressions.html)
+- [Arithmetic evaluation](https://zsh.sourceforge.io/Doc/Release/Arithmetic-Evaluation.html)
 - [Shell builtins](https://zsh.sourceforge.io/Doc/Release/Shell-Builtin-Commands.html)
 - [Completion system](https://zsh.sourceforge.io/Doc/Release/Completion-System.html)
 - [Completion widgets](https://zsh.sourceforge.io/Doc/Release/Completion-Widgets.html)
@@ -53,6 +58,9 @@ OMZ is an implementation corpus, not the authority for core Zsh semantics. Some 
 - [Zsh modules](https://zsh.sourceforge.io/Doc/Release/Zsh-Modules.html)
 - [User contributions](https://zsh.sourceforge.io/Doc/Release/User-Contributions.html)
 - [Startup files](https://zsh.sourceforge.io/Doc/Release/Files.html)
+- [Calendar functions](https://zsh.sourceforge.io/Doc/Release/Calendar-Function-System.html)
+- [TCP functions](https://zsh.sourceforge.io/Doc/Release/TCP-Function-System.html)
+- [FTP functions](https://zsh.sourceforge.io/Doc/Release/Zftp-Function-System.html)
 
 ## Maintenance procedure
 

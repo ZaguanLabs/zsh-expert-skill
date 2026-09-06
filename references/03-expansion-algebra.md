@@ -26,9 +26,10 @@ over an unexplained five-flag expression.
 - `(Q)` removes one level of shell quoting; `(q)`, `(qq)`, `(qqq)`, `(q-)` produce different reversible/display-oriented quoting forms.
 - `(V)` makes non-printing characters visible for diagnostics.
 - `(k)`, `(v)`, `(kv)` select associative keys, values, or alternating pairs.
-- `(M)` retains matched portions/elements; `(R)` selects matching values; `(B)`, `(E)`, `(N)` expose match positions/counts in relevant substitutions.
+- `(M)` retains matched portions/elements; `(R)` retains the unmatched rest in substring extraction; `(B)`, `(E)`, `(N)` expose the start, position past the end, and length. These are expansion flags, distinct from subscript `(R)`.
 - `(o...)`/`(O...)` sort ascending/descending; `n` is numeric, `-` correctly handles negative numeric sort in 5.9+.
-- `(u)` removes duplicates after ordering; a `typeset -U` array maintains uniqueness on assignment.
+- `(u)` removes duplicates before ordering; a `typeset -U` array maintains uniqueness on assignment. Flag spelling order does not change the expansion phases.
+- `(b)` quotes pattern metacharacters; `(0)` splits NUL-delimited data; `(t)` describes parameter type/attributes.
 - `(P)` dereferences a parameter name.
 - `(%)` performs prompt escapes; never apply it blindly to untrusted content.
 - `(e)` re-evaluates parameter, command, and arithmetic substitutions. Treat it like `eval`.
@@ -62,7 +63,8 @@ Modifiers apply to parameters, history, and generated filenames:
 - `:a` absolute path with lexical normalization;
 - `:A` resolve as far as possible, including symlinks;
 - `:P` physical path resolution in supported contexts;
-- `:l`, `:u`, `:c` lowercase, uppercase, capitalize;
+- `:l`, `:u` lowercase and uppercase; `(C)` capitalizes words;
+- `:c` resolves a command through `PATH`;
 - `:s/old/new/`, `:gs/old/new/` substitution.
 
 Do not treat lexical normalization as a containment check. For security, resolve the intended existing ancestor and compare canonical path components.
@@ -78,6 +80,28 @@ files=( ${~pattern}(N.) )
 ```
 
 Validate or construct untrusted patterns from literals; Zsh patterns can be computationally expensive and can select far more files than intended.
+
+Compose a pattern from literal data with `(b)`, not `(q)`: shell quoting and pattern quoting are different languages.
+
+```zsh
+local literal='report [final]*' pattern
+pattern="*${(b)literal}*"
+[[ $subject = ${~pattern} ]]
+```
+
+Inside `[[ ... ]]`, `[[ $subject = "$literal" ]]` needs no pattern compilation for equality. Reverse subscripts have their own literal switch `(e)`. Keep these three contexts distinct.
+
+## Expansion has a shape as well as a value
+
+```zsh
+local -a parts=(alpha beta) first_element first_character prefixed
+first_element=("${${(@)parts}[1]}")  # inner value is still an array: alpha
+first_character=("${(@)${parts}[1]}") # inner value joined: a
+```
+
+For an ordinary elementwise prefix, write `prefixed=("${(@)parts/#/src/}")`. For distribution through surrounding text, keep array shape inside quotes: `prefixed=(src/"${(@)^parts}".zsh)`. Two such expansions produce a Cartesian product; an empty array annihilates the product. Without `(@)`, quoted joining can instead produce a single word. Use array zipping when the intended relationship is positional rather than every combination.
+
+`${(S)value//pattern/replacement}` requests shortest matches; ordinary replacement is greedy. `(#b)` captures groups and `(#m)` exposes the whole match for computed replacements; localize match parameters and read them only after a successful match. Use explicit stages when combining matching, joining, and splitting. A pair of flags in a different textual order is not a new processing order.
 
 ## Substitution and arrays
 

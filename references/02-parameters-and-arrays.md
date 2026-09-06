@@ -15,7 +15,7 @@ local -r constant=value
 
 Explicit types prevent arithmetic and empty/unset surprises. In Zsh 5.9, `TYPESET_TO_UNSET` can leave declarations unset, but do not assume it is enabled.
 
-Indexed arrays are one-based in native mode. `$array` means `$array[1]`, not the whole array. Use:
+Indexed arrays are one-based in native mode. `$array` means all elements, like `$array[*]`; unquoted expansion drops empty elements, and `"$array"` joins elements. `"${array[@]}"` preserves individual elements, including empties. `KSH_ARRAYS` changes both indexing and unsubscripted expansion. Use:
 
 ```zsh
 (( $#words ))                 # number of elements
@@ -62,13 +62,28 @@ Associative order is not a stable API. Sort explicitly when output must be deter
 Zsh subscripts can search without external loops:
 
 ```zsh
-idx=${array[(I)$needle]}       # index of last exact/pattern match form
-idx=${array[(i)$needle]}       # index search; inspect case choice
+idx=${array[(Ie)$needle]}      # last literal match; 0 if absent
+idx=${array[(ie)$needle]}      # first literal match; $#array+1 if absent
 matches=("${(@M)array:#pattern}")
-rest=("${array:#pattern}")
+rest=("${(@)array:#pattern}")
 ```
 
-`(r)`/`(R)` select values matching a pattern; `(i)`/`(I)` return indices. Uppercase variants generally choose the last or all matching form depending on context. For uncommon combinations, prove behavior with a tiny test instead of guessing.
+For indexed arrays, `(r)`/`(R)` select first/last matching values; `(i)`/`(I)` return first/last matching indices. Add subscript flag `e` for literal matching. Without `e`, even `$needle` can be a pattern here. Use `(( ${array[(Ie)$needle]} ))` for literal membership; the forward miss sentinel is nonzero, so `(i)` alone is not a boolean membership test. Associative `(R)` returns all matching values and `(I)` all matching keys, in unspecified order. Associative `(k)`/`(K)` instead treat stored keys as patterns matching the supplied value: useful for dispatch, but overlapping patterns require explicit precedence.
+
+## Sets, pairs, and structural edits
+
+```zsh
+local -a wanted=('one file' '' '*.c' 'one file') done=('*.c')
+local -a pending common
+pending=("${(@)wanted:|done}")  # literal difference; RHS is an array NAME
+common=("${(@)wanted:*done}")   # literal intersection
+```
+
+These retain left-hand order and duplicates; they are membership filters, not mathematical sets. Use `(@u)` for first-occurrence uniqueness when appropriate. This avoids turning names containing `*` or `[` into patterns.
+
+Use `${(@)keys:^values}` to interleave paired arrays; `:^` truncates to the shorter input, while `:^^` cycles the shorter to the longer length. Validate equal lengths when constructing an association so truncation cannot silently lose data. Keep `(kv)` associations paired through iteration; sorting a flat key/value sequence corrupts the relation. For deterministic records, sort keys and look up each value.
+
+Indexed array range assignment splices: `items[2,3]=(replacement ...)`; `items[2]=()` deletes and shifts later elements. Associations have no positional order or nested array values. For structured records, use parallel arrays with an explicit index or a deliberately encoded record format.
 
 The `${+name}` family tests definition without conflating unset and empty:
 
@@ -112,6 +127,6 @@ Named references exist on the post-5.9 development line, not in stable 5.9.2; se
 
 `typeset -h` suppresses the special behavior of a special parameter when shadowed/localized; it is not a visibility flag. `typeset -H` suppresses a value in ordinary `typeset` listings, but explicit naming/pattern access can still reveal it. Neither is secret storage.
 
-Useful introspection tables from `zsh/parameter` include `parameters`, `commands`, `functions`, `aliases`, `widgets`, `jobstates`, `options`, and `modules`. Load the module if necessary and use these tables to reason about the live shell without parsing human-readable output.
+Useful introspection tables from `zsh/parameter` include `parameters`, `commands`, `functions`, `aliases`, `jobstates`, `options`, and `modules`. `widgets` and `keymaps` come from `zsh/zleparameter`. Load the owning module if necessary. Avoid common special names (`path`, `commands`, `options`, `status`) for ordinary scratch variables: they can alter the shell or reject assignment.
 
 Search terms: `typeset -T`, tied parameters, expansion flag `@`, associative key existence, subscript flags, `parameters` hash.

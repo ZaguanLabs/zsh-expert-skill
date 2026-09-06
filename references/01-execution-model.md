@@ -25,7 +25,7 @@ whence -w -- git            # classify
 whence -p -- git            # external path only
 ```
 
-Use `command` to bypass functions and aliases, `builtin` to require a builtin, and an absolute path only when path identity is itself part of the contract. `command -p` requests a standard utility path and is valuable inside libraries that must not inherit a poisoned `PATH`.
+In native mode, `command` requests an external command, bypassing functions and builtins; `POSIX_BUILTINS` changes builtin handling. Use `builtin` to require a builtin, and an absolute path when path identity is part of the contract. `command -p` requests a standard utility path. Neither prefix undoes global aliases expanded earlier by the parser; protect the loading/definition boundary with `autoload -U` or a controlled parse environment.
 
 ## Subshell boundaries
 
@@ -51,9 +51,9 @@ while IFS= read -r line; do
 done < "$file"
 ```
 
-over designs that rely on variables changed inside a piped loop.
+when the input is a file. Unlike Bash's usual behavior, native Zsh normally runs the final shell component of a foreground pipeline in the current shell: `producer | while ...` and `producer | read ...` can retain assignments. Earlier components and background pipelines are isolated. Redirection makes ownership straightforward, but do not introduce command substitution just to work around a Bash limitation Zsh does not share. Test job suspension separately; interactive job control adds subtleties.
 
-`$ZSH_SUBSHELL` is a diagnostic counter for forked shell contexts. `zsh_eval_context`/`ZSH_EVAL_CONTEXT` reveals contexts such as `toplevel`, `shfunc`, `file`, `cmdsubst`, `globqual`, and `zle`; use it sparingly for defensive entrypoint checks.
+`$ZSH_SUBSHELL` is a diagnostic counter for forked shell contexts. `zsh_eval_context`/`ZSH_EVAL_CONTEXT` reveals contexts such as `toplevel`, `shfunc`, `file`, `cmdsubst`, `globqual`, and `globsort`; it is not a ZLE-active test. Use `zle` with no arguments to test whether widgets can currently be called; it can fail during completion even while the editor exists. Use ZLE's `CONTEXT` within a widget.
 
 ## Status has structure
 
@@ -77,6 +77,16 @@ Do not use `local result=$(command)` when failure matters: the declaration can m
 local result
 result=$(command) || return
 ```
+
+Capture aggregate and component statuses together; a separate assignment would replace `pipestatus`:
+
+```zsh
+local -a outcome
+producer | consumer
+outcome=( "$?" "${pipestatus[@]}" )
+```
+
+`outcome[1]` is the aggregate, and subsequent elements belong to the pipeline. A producer hidden in process substitution is outside this pipeline; its status needs a separate protocol.
 
 ## Native syntax worth using
 

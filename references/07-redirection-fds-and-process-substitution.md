@@ -5,8 +5,8 @@ Use this section for precise stream routing, multios, named descriptors, process
 ## Redirections are left to right
 
 ```zsh
-command >file 2>&1   # stderr follows stdout to file
-command 2>&1 >file   # stderr keeps the old stdout
+command producer >file 2>&1   # stderr follows stdout to file
+command producer 2>&1 >file   # stderr keeps the old stdout
 ```
 
 Make the intended descriptor graph explicit. `|&` is `2>&1 |`. `&>file` redirects stdout and stderr together but differs from `>file 2>&1` when multios are involved.
@@ -79,18 +79,22 @@ local content
 content=$(<"$file") || return
 ```
 
-For binary/NUL data, large files, FIFOs, or bounded reads, use `zsh/system` `sysread` or an external binary-safe tool. Shell parameters cannot preserve NUL bytes as ordinary text.
+Native Zsh parameters can preserve embedded NUL bytes. The boundary is external argv/environment, whose strings cannot contain NUL; use a pipe or file to transport those bytes. `POSIX_STRINGS` changes `$'...'` NUL behavior. For byte indexing, localize `NO_MULTIBYTE`; for large files, FIFOs, or bounded reads use `zsh/system` `sysread` or a suitable external tool. Command substitution still removes trailing newlines even when other bytes survive.
 
 ## Here-documents and here-strings
 
 Quote the here-doc delimiter to suppress expansion:
 
 ```zsh
-command <<'EOF'
+consumer <<'EOF'
 $literal $(not-run)
 EOF
 ```
 
 A here-string `<<< "$value"` adds a newline. Use `print -rn -- "$value" | command` when exact lack of a trailing newline matters, accepting the pipeline semantics.
+
+For a cheap seekable file containing a value plus a newline, `=(<<< "$value")` has a native optimization. Choose `=(print -rn -- "$value")` when the extra newline is unwanted. Neither form replaces explicit status handling for a fallible producer.
+
+Redirection-only commands depend on `NULLCMD`, `READNULLCMD`, and emulation. Use `: > "$file"` when creating/truncating is the intent, and `$(<"$file")` when reading is the intent; do not assume a bare `>file` behaves like POSIX sh. Under `MULTIOS`, an unquoted glob in the redirection target can open every match.
 
 Search terms: multios, process substitution, named file descriptor, `=(...)`, wait process substitution, `NO_CLOBBER`.

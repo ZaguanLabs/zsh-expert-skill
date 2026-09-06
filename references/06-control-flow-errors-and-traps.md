@@ -21,7 +21,7 @@ output=$(command -- "$arg") || {
 
 ## `always` is native `finally`
 
-Zsh's try/always construct guarantees cleanup:
+Zsh's try/always construct provides cleanup across ordinary control transfers and many shell errors:
 
 ```zsh
 local tmp
@@ -38,6 +38,8 @@ After the always block, ordinary `$?` comes from the try block, not the cleanup 
 
 Use `always` to restore `stty`, directories, temporary files, locks, file descriptors, widgets, or temporary hooks. It is superior to a broad `EXIT` trap for function-local resources.
 
+It is not a guarantee across `exit`, process replacement, `SIGKILL`, or an error that prevents the construct from being parsed. `TRY_BLOCK_INTERRUPT` represents an interrupt pending from the try block; clearing it deliberately consumes the interrupt. Keep ordinary command failure, shell error, and cancellation separate, and avoid a `return` in cleanup that overwrites the operation's intended control flow.
+
 ## Trap models differ
 
 Zsh supports:
@@ -48,7 +50,7 @@ Zsh supports:
 
 Function traps and list traps differ in subshell inheritance and reset behavior. If a reusable function installs traps, use `emulate -L zsh` or `setopt localtraps` so it does not replace the caller's trap permanently.
 
-The return status of a signal trap is meaningful: zero tells Zsh the signal was handled and normal execution may continue; a nonzero return preserves interrupted behavior. For Ctrl-C cleanup, capture and return the incoming status rather than always returning zero.
+The return status of a function signal trap is meaningful: zero tells Zsh the signal was handled and normal execution may continue; a nonzero return preserves interrupted behavior. To mimic SIGINT termination from `TRAPINT`, use `return $((128 + $1))`, where `$1` is the signal number. The incoming `$?` is not necessarily a signal status. A `return` in a list trap instead returns from the surrounding context.
 
 Avoid doing complex, non-reentrant work in traps. Set a flag, terminate owned children, close known descriptors, and let normal control flow finish cleanup.
 
@@ -77,5 +79,11 @@ Track every PID/process group you create. On cancellation:
 5. reap if the execution model permits it.
 
 Never use a broad process-name kill as cleanup.
+
+## Control-flow tools beyond boolean status
+
+Use `case ... ;&` for unconditional fallthrough into the next body and `;|` to resume testing later patterns. The latter can express independent classification rules, but changes to the tested variable can affect later matches. Choose explicit status classes for ordinary APIs and `setopt local_loops` when a helper's `break`/`continue` must not reach a caller's loop.
+
+For deeply nested same-shell operations, contributed `throw`/`catch` can implement named exceptions with `always`. Autoload them explicitly, quote catch patterns, and reset `EXCEPTION` at the outermost owner. An unhandled exception leaves that variable set; a later unrelated shell error can otherwise look like the old exception. Exceptions do not propagate through a forked worker: send a classified result over its protocol. Use this mechanism only when nonlocal recovery makes the code clearer than explicit returns.
 
 Search terms: try always, `TRY_BLOCK_ERROR`, function traps, `LOCAL_TRAPS`, `ERR_RETURN`, `zsystem flock`, process group.

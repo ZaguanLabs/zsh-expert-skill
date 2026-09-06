@@ -94,6 +94,32 @@ acme::unload() {
 }
 ```
 
-Post-5.9 development adds namespaces and private parameters; do not assume them on 5.9.2.
+Post-5.9 development adds namespaces; use prefixes on the stable baseline. Private parameters are already available through the optional stable `zsh/param/private` module, with a different purpose from namespaces.
+
+## Design an intentional dynamic-scope API
+
+For a list-returning helper, have the caller declare `local -a reply`; the helper assigns `reply=(...)` without redeclaring it. This returns arbitrary elements without command substitution, serialization, or a subshell. A scalar helper can use the same protocol with `REPLY`. Document required inputs, output types, and which outputs are valid on failure. Copy the output before calling another helper that shares the protocol.
+
+Do not use `typeset -g` as a guaranteed route to the outermost global: it can operate on an existing dynamically visible parameter. Caller-named outputs also need collision handling with the helper's own locals, not just identifier validation. A fixed `reply` protocol is often simpler.
+
+Stable private parameters let implementation scratch state avoid leaking into callees:
+
+```zsh
+_acme_operation() {
+  emulate -L zsh
+  zmodload zsh/param/private || return 1
+  local -P scratch=(one two)  # recognized local syntax before module loading
+  _acme_helper               # cannot read this invocation's scratch
+}
+```
+
+`private scratch=(...)` requires the module's reserved word to exist when the function is parsed; loading it inside that same body is too late. `local -P` avoids that parse-order trap. Private values are per-invocation, not persistent closure state. Callees can still see an outer non-private parameter of the same name. Do not export private parameters; tied parameters cannot be private, and special parameters require deliberately hiding their special behavior.
+
+## Isolate loading as well as execution
+
+`emulate -L` in a function body runs after that body was parsed. For a library that must load under foreign options, use constant-code sticky emulation, e.g. `emulate zsh -c 'autoload -Uz _acme_operation'`, or a loader that establishes parsing options before sourcing definitions. Functions defined/marked in sticky emulation regain that environment on invocation. It is not a general sandbox.
+
+Use `autoload -r`/`-R` when resolving a function's location at registration is intentional; `-R` reports missing definitions. Compiled functions record alias and autoload choices: use `zcompile -U` and the appropriate `-z`/`-k` at compilation. A digest explicitly placed in `fpath` is used without comparing source age, so its owner must invalidate it.
+
 
 Search terms: `emulate -L`, dynamic scope, autoload `-Uz`, function local parameters, `LOCAL_PATTERNS`, teardown.

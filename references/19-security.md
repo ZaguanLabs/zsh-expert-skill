@@ -15,9 +15,14 @@ These can turn data into behavior:
 - directory-local environment/config files;
 - terminal control sequences;
 - dynamic parameter names with `(P)`;
-- generated code passed to `zsh -c`.
+- generated code passed to `zsh -c`;
+- arithmetic values and numeric subscripts, which can recursively evaluate expressions;
+- `zstyle -e`, `zpty` command arguments, `sched` commands, `zmv` destinations, and expression-based contrib helpers;
+- writes to active parameter tables such as `functions`, `aliases`, and `mapfile`.
 
 Eliminate the boundary when arrays, a restricted grammar, or a direct function call can express the result. If it remains, validate input before it reaches the boundary and document the accepted language.
+
+Quote for the next interpreter: `(q)` for Zsh source words, `(b)` for literal fragments of a Zsh pattern, and a constant format for `printf`/`zformat`. Quotes at the call site do not neutralize arithmetic evaluation of a scalar or the reparse performed inside a helper. Validate numeric input as text before assigning it to an integer or using it as an index. Restricted-shell mode is not a sandbox for arbitrary programs; permitted interpreters and commands with shell escapes can escape its intended policy.
 
 ## Filenames are arbitrary data
 
